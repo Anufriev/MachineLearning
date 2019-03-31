@@ -2,7 +2,8 @@ import LinearRegression
 
 import random
 import math
-import matplotlib.pyplot as plt
+import csv
+import numpy as np
 
 import pprint
 
@@ -14,8 +15,9 @@ from plotly import graph_objs as go
 
 
 def get_data(m):
-    w0 = 0.2 #0.000001 * random.randrange(-100, 100, 1)
-    w1 = 0.9 #0.000001 * random.randrange(-100, 100, 1)
+
+    w0 = random.randrange(-100, 100, 1)
+    w1 = 0.01 * random.randrange(-100, 100, 1)
 
     print("w0={w0}".format(w0=w0))
     print("w1={w1}".format(w1=w1))
@@ -24,8 +26,8 @@ def get_data(m):
     ys = []
 
     for i in range(m):
-        bias_x = 0.001 * random.randrange(-100, 100, 5)
-        bias_y = 0.0001 * (random.randrange(-100, 100, 10) ** 3)
+        bias_x = 0.01 * random.randrange(-100, 100, 5)
+        bias_y = 0.001 * (random.randrange(-100, 100, 10) ** 3)
 
         x = i + bias_x
         y = w0 + w1 * x + bias_y
@@ -37,6 +39,7 @@ def get_data(m):
 
 
 traces = []
+costs = []
 
 def add_hypothensies_trace(xs, w0, w1, name):
     hs = []
@@ -51,21 +54,18 @@ def add_hypothensies_trace(xs, w0, w1, name):
 
     traces.append(trace)
 
-
-
-def train(xs, ys, n):
+def train(xs, ys, steps):
     
     w0 = 0.5
     w1 = 0.5
 
-    ldw0 = 0.00001
-    ldw1 = 0.0001
+    l = 0.00001
 
     pp = pprint.PrettyPrinter(indent=0)
        
     d = []
 
-    for i in range(n):
+    for i in range(steps):
            
         def h(x):
             return w0 + w1 * x
@@ -77,27 +77,24 @@ def train(xs, ys, n):
             return (h(xi) - yi) * xi
 
         j = LinearRegression.cost(xs, ys, h)
-    
-        
+        costs.append(j)
+
         dw0 = LinearRegression.partial_derivative(xs, ys, pdw0)
         dw1 = LinearRegression.partial_derivative(xs, ys, pdw1)
         
-        d.append([i, j, w0, dw0, ldw0, ldw0 * dw0, w1, dw1, ldw1, ldw1 * dw1])
+        d.append([i, j, w0, dw0, w1, dw1])
 
-        w0 = w0 - (ldw0 * dw0)
-        w1 = w1 - (ldw1 * dw1)
-
-        previous_dw0 = dw0
-        previous_dw1 = dw1
-
-        add_hypothensies_trace(xs, w0, w1, 'h' + str(i))
+        w0 = w0 - (l * dw0)
+        w1 = w1 - (l * dw1)
+        
+        #add_hypothensies_trace(xs, w0, w1, 'h' + str(i))
 
     print(tabulate(d, headers=['#', 'J', 'w0', 'dw0', 'lw0', 'lw0 * dw0', 'w1', 'dw1', 'lw1', 'lw0 * dw0']))
 
     return (w0, w1)
 
-n = 300
-steps = 5
+n = 500
+steps = 500
 
 # generate array from n elements;
 data = get_data(n)
@@ -112,5 +109,10 @@ result = train(xs, ys, steps)
 
 w0 = result[0]
 w1 = result[1]
+
+add_hypothensies_trace(xs, w0, w1, 'gradient descent')
+
+costTrace = go.Scatter(x = list(range(steps)), y = costs, mode = 'lines', name = "J")
+traces.append(costTrace)
 
 py.plot(traces, filename='linear-regression')
